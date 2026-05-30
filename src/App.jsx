@@ -5,6 +5,7 @@ import ServiceDetail from './ServiceDetail.jsx'
 
 // A handful of well-known stations for quick selection. Full search lives in StationSearch.
 const QUICK = [
+  { crs: 'WIN', name: 'Winchester' },
   { crs: 'PAD', name: 'London Paddington' },
   { crs: 'KGX', name: 'London Kings Cross' },
   { crs: 'EUS', name: 'London Euston' },
@@ -50,7 +51,7 @@ function ServiceRow({ s, mode, onOpen }) {
 const REFRESH_MS = 30000
 
 export default function App() {
-  const [crs, setCrs] = useState('PAD')
+  const [crs, setCrs] = useState('WIN')
   const [mode, setMode] = useState('departures') // 'departures' | 'arrivals'
   const [board, setBoard] = useState(null)
   const [error, setError] = useState(null)
