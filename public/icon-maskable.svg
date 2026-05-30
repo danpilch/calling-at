@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Calling At">
+  <!-- Full-bleed background; artwork kept within the central ~80% safe zone for maskable cropping. -->
+  <rect width="512" height="512" fill="#002e5c"/>
+  <g fill="#ffd500">
+    <path d="M141 240h150l-42-42a22 22 0 0 1 31-31l79 79a22 22 0 0 1 0 31l-79 79a22 22 0 0 1-31-31l42-42H141a22 22 0 0 1 0-43z"/>
+  </g>
+  <text x="256" y="392" font-family="Georgia, serif" font-size="96" font-weight="bold" fill="#ffffff" text-anchor="middle">At</text>
+</svg>

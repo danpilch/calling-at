@@ -1,256 +1,88 @@
-import { useEffect, useState, useCallback } from 'react'
-import { getBoard } from './api.js'
+import { useEffect } from 'react'
+import Board from './Board.jsx'
 import StationSearch from './StationSearch.jsx'
 import ServiceDetail from './ServiceDetail.jsx'
 import MyTravel from './MyTravel.jsx'
 import Journeys from './Journeys.jsx'
 import More from './More.jsx'
-import { isFavourite, toggleFavourite, addRecent } from './storage.js'
+import { useRoute, segments, navigate, replace } from './router.js'
 
-// A handful of well-known stations for quick selection. Full search lives in StationSearch.
-const QUICK = [
-  { crs: 'WIN', name: 'Winchester' },
-  { crs: 'PAD', name: 'London Paddington' },
-  { crs: 'KGX', name: 'London Kings Cross' },
-  { crs: 'EUS', name: 'London Euston' },
-  { crs: 'WAT', name: 'London Waterloo' },
-  { crs: 'VIC', name: 'London Victoria' },
-  { crs: 'LDS', name: 'Leeds' },
-  { crs: 'MAN', name: 'Manchester Piccadilly' },
-  { crs: 'BHM', name: 'Birmingham New Street' },
-  { crs: 'EDB', name: 'Edinburgh' },
-  { crs: 'BRI', name: 'Bristol Temple Meads' },
+const DEFAULT = '/live/WIN/departures'
+
+const TABS = [
+  { key: 'mytravel', label: 'My Travel' },
+  { key: 'live', label: 'Live Trains' },
+  { key: 'journeys', label: 'Journeys' },
+  { key: 'stations', label: 'Stations' },
+  { key: 'more', label: 'More' },
 ]
 
-function statusClass(etd) {
-  if (!etd) return ''
-  if (etd === 'On time') return 'on-time'
-  if (etd === 'Cancelled' || etd === 'Delayed') return 'delay'
-  return 'delay' // an "Exp HH:MM" expected time means it's running late
+// Which bottom tab is highlighted for a given route view.
+function tabFor(view) {
+  if (view === 'search') return 'stations'
+  if (view === 'service') return 'live'
+  return view
 }
-
-function ServiceRow({ s, mode, onOpen }) {
-  // Departures key off destination + std/etd; arrivals off origin + sta/eta.
-  const arrivals = mode === 'arrivals'
-  const place = (arrivals ? s.origin : s.destination)?.[0]
-  const name = place?.locationName ?? '—'
-  const via = place?.via ? ` ${place.via}` : ''
-  const sched = arrivals ? s.sta : s.std
-  const expected = s.isCancelled ? 'Cancelled' : (arrivals ? s.eta : s.etd)
-  return (
-    <button className="svc" onClick={() => onOpen(s, name, sched)}>
-      <div className="svc-time">{sched}</div>
-      <div className="svc-dest">
-        <div className="svc-dest-name">{arrivals ? 'from ' : ''}{name}{via}</div>
-        <div className="svc-meta">
-          {s.operator}{s.platform ? ` · Plat ${s.platform}` : ' · Plat —'}
-        </div>
-      </div>
-      <div className={`svc-status ${statusClass(expected)}`}>{expected}</div>
-      <span className="svc-chevron">&#8250;</span>
-    </button>
-  )
-}
-
-const REFRESH_MS = 30000
 
 export default function App() {
-  const [crs, setCrs] = useState('WIN')
-  const [mode, setMode] = useState('departures') // 'departures' | 'arrivals'
-  const [tab, setTab] = useState('live') // 'mytravel' | 'live' | 'journeys' | 'stations' | 'more'
-  const [board, setBoard] = useState(null)
-  const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [selected, setSelected] = useState(null) // { id, std, dest }
-  const [fav, setFav] = useState(false) // is the current station favourited
+  const hash = useRoute()
+  const seg = segments(hash)
+  const view = seg[0] || 'live'
 
-  // Refreshes keep the current board on screen on error (don't flash empty);
-  // only an initial/changed load clears it.
-  const load = useCallback(async (code, m, isRefresh = false) => {
-    setLoading(true)
-    if (!isRefresh) setError(null)
-    try {
-      const b = await getBoard(m, code, 12)
-      setBoard(b)
-      setError(null)
-      // Record the station (with its proper name) in recents once we have a board.
-      if (b.locationName) addRecent({ crs: code, name: b.locationName })
-    } catch (e) {
-      setError(e.message)
-      if (!isRefresh) setBoard(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  const overlayOpen = searchOpen || selected !== null
-
+  // Normalise the root to the default board.
   useEffect(() => {
-    setBoard(null)
-    load(crs, mode)
-  }, [crs, mode, load])
+    if (seg.length === 0) replace(DEFAULT)
+  }, [seg.length])
 
-  // Keep the favourite star in sync with the current station.
-  useEffect(() => { setFav(isFavourite(crs)) }, [crs])
-
-  // Auto-refresh the board; paused while an overlay is open.
-  useEffect(() => {
-    if (overlayOpen) return
-    const id = setInterval(() => load(crs, mode, true), REFRESH_MS)
-    return () => clearInterval(id)
-  }, [crs, mode, overlayOpen, load])
-
-  // Each overlay pushes a history entry so the device/browser Back button (and
-  // the in-app back arrow, via history.back()) closes it instead of leaving the site.
-  useEffect(() => {
-    const onPop = () => { setSearchOpen(false); setSelected(null) }
-    window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
-  }, [])
-
-  const services = board?.trainServices ?? []
-  const messages = board?.nrccMessages ?? []
-
-  function openSearch() {
-    window.history.pushState({ overlay: 'search' }, '')
-    setSearchOpen(true)
+  function openService(s) {
+    const id = s.serviceIdUrlSafe ?? s.serviceIdPercentEncoded
+    if (id) navigate(`/service/${encodeURIComponent(id)}`)
   }
 
-  // Selecting a station (from search or My Travel) shows its live board.
-  function pickStation(st) {
-    setCrs(st.crs)
-    setTab('live')
-  }
-
-  function toggleFav() {
-    if (!board?.locationName) return
-    toggleFavourite({ crs, name: board.locationName })
-    setFav((f) => !f)
-  }
-
-  function openService(s, name, sched) {
-    const id = s.serviceIdPercentEncoded ?? s.serviceIdUrlSafe
-    if (!id) return
-    window.history.pushState({ overlay: 'detail' }, '')
-    setSelected({ id, std: sched, dest: name })
-  }
-
-  if (searchOpen) {
+  let main_view
+  if (view === 'service') {
+    return <ServiceDetail serviceId={seg[1]} onClose={() => window.history.back()} />
+  } else if (view === 'search') {
+    // Standalone search (Stations tab / "Find a station") — pick replaces this
+    // transient entry with the chosen board so Back skips the search.
     return (
       <StationSearch
         onClose={() => window.history.back()}
-        onPick={(st) => { pickStation(st); window.history.back() }}
+        onPick={(st) => replace(`/live/${st.crs}/departures`)}
       />
     )
-  }
-
-  if (selected) {
-    return (
-      <ServiceDetail
-        serviceId={selected.id}
-        summary={selected}
-        onClose={() => window.history.back()}
+  } else if (view === 'journeys') {
+    main_view = (
+      <Journeys
+        fromCrs={seg[1]}
+        toCrs={seg[2]}
+        onPair={(f, t) => replace(`/journeys/${f}/${t}`)}
+        onOpenService={openService}
       />
     )
-  }
-
-  const board_view = (
-    <main className="wrap">
-      <h2>{mode === 'arrivals' ? 'Live Arrivals' : 'Live Departures'}</h2>
-
-      <div className="station-bar">
-        <button className="search-trigger" onClick={openSearch}>
-          <span className="search-icon">&#9906;</span>
-          <span>{board?.locationName ?? crs}</span>
-          <span className="search-trigger-hint">Change station</span>
-        </button>
-        <button
-          className={`fav-btn ${fav ? 'fav-on' : ''}`}
-          onClick={toggleFav}
-          disabled={!board?.locationName}
-          aria-pressed={fav}
-          aria-label={fav ? 'Remove from favourites' : 'Add to favourites'}
-        >{fav ? '★' : '☆'}</button>
-      </div>
-
-        <div className="chips">
-          {QUICK.slice(0, 6).map((q) => (
-            <button
-              key={q.crs}
-              className={`chip ${q.crs === crs ? 'chip-on' : ''}`}
-              onClick={() => setCrs(q.crs)}
-            >{q.crs}</button>
-          ))}
-        </div>
-
-        <div className="toggle" role="tablist">
-          <button
-            role="tab"
-            className={mode === 'departures' ? 'toggle-on' : ''}
-            onClick={() => setMode('departures')}
-          >Departures</button>
-          <button
-            role="tab"
-            className={mode === 'arrivals' ? 'toggle-on' : ''}
-            onClick={() => setMode('arrivals')}
-          >Arrivals</button>
-        </div>
-
-        {board && (
-          <div className="board-head">
-            <strong>{board.locationName}</strong>
-            <span className="muted">
-              {loading ? 'Updating…' : `as of ${board.generatedAt?.slice(11, 16) ?? ''}`}
-            </span>
-          </div>
-        )}
-
-        {messages.length > 0 && (
-          <div className="alert">
-            {messages.map((m, i) => (
-              <p key={i} dangerouslySetInnerHTML={{ __html: m.value }} />
-            ))}
-          </div>
-        )}
-
-        {error && <div className="error">Couldn’t load {mode}: {error}</div>}
-        {loading && !board && <div className="muted pad">Loading live board…</div>}
-
-        {board && services.length === 0 && !loading && (
-          <div className="muted pad">No {mode} listed right now.</div>
-        )}
-
-        <div className="card">
-          {services.map((s) => (
-            <ServiceRow key={s.serviceIdGuid ?? s.serviceIdUrlSafe} s={s} mode={mode} onOpen={openService} />
-          ))}
-        </div>
-      </main>
-  )
-
-  let main_view
-  if (tab === 'mytravel') {
-    main_view = <MyTravel onPick={pickStation} onFindStation={openSearch} />
-  } else if (tab === 'journeys') {
-    main_view = <Journeys onOpenService={openService} />
-  } else if (tab === 'more') {
+  } else if (view === 'mytravel') {
+    main_view = (
+      <MyTravel
+        onPick={(st) => navigate(`/live/${st.crs}/departures`)}
+        onFindStation={() => navigate('/search')}
+      />
+    )
+  } else if (view === 'more') {
     main_view = <More />
   } else {
-    main_view = board_view // 'live' (Stations tab opens the search overlay instead)
+    // 'live' — /live/:crs/:mode[/to/:filter]
+    const crs = seg[1] || 'WIN'
+    const mode = seg[2] === 'arrivals' ? 'arrivals' : 'departures'
+    const filterCrs = seg[3] === 'to' ? seg[4] : null
+    main_view = <Board crs={crs} mode={mode} filterCrs={filterCrs} onOpenService={openService} />
   }
 
-  const TABS = [
-    { key: 'mytravel', label: 'My Travel' },
-    { key: 'live', label: 'Live Trains' },
-    { key: 'journeys', label: 'Journeys' },
-    { key: 'stations', label: 'Stations' },
-    { key: 'more', label: 'More' },
-  ]
+  const activeTab = tabFor(view)
 
   function onTab(key) {
-    if (key === 'stations') { openSearch(); return }
-    setTab(key)
+    if (key === 'live') navigate(DEFAULT)
+    else if (key === 'stations') navigate('/search')
+    else navigate(`/${key}`)
   }
 
   return (
@@ -266,7 +98,7 @@ export default function App() {
         {TABS.map((t) => (
           <button
             key={t.key}
-            className={t.key === tab ? 'tab-on' : ''}
+            className={t.key === activeTab ? 'tab-on' : ''}
             onClick={() => onTab(t.key)}
           >{t.label}</button>
         ))}

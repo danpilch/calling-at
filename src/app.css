@@ -291,6 +291,14 @@ h2 {
   margin: 0 0 var(--nr-space-sm);
 }
 .more-text a, .more-foot a { color: var(--nr-link); }
+.more-list {
+  margin: 0 0 var(--nr-space-sm);
+  padding-left: var(--nr-space-lg);
+  font-size: var(--nr-text-body);
+  color: var(--nr-text);
+  line-height: 1.5;
+}
+.more-list li { margin-bottom: var(--nr-space-xs); }
 .more-actions { margin-top: var(--nr-space-xs); }
 .more-action {
   display: flex;
@@ -311,6 +319,59 @@ h2 {
 .more-action:last-child { border-bottom: none; }
 .more-action:disabled { color: var(--nr-text-muted); cursor: default; }
 .more-foot { margin-top: var(--nr-space-lg); }
+
+/* "Calling at" board filter */
+.calling-at { margin-bottom: var(--nr-space-md); font-size: var(--nr-text-caption); }
+.calling-at-add {
+  background: none;
+  border: 1px dashed var(--nr-divider);
+  border-radius: 6px;
+  color: var(--nr-link);
+  padding: 6px 12px;
+  font-family: var(--nr-font-body);
+  font-size: var(--nr-text-caption);
+  font-weight: bold;
+  cursor: pointer;
+}
+.calling-at-on {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--nr-earlier-later);
+  color: var(--nr-link);
+  border-radius: 6px;
+  padding: 6px 6px 6px 12px;
+}
+.calling-at-clear {
+  background: none;
+  border: none;
+  color: var(--nr-link);
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+/* Geolocation button in the search bar */
+.geo-btn {
+  width: 100%;
+  margin-top: var(--nr-space-sm);
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 6px;
+  padding: var(--nr-button-padding);
+  font-family: var(--nr-font-body);
+  font-size: var(--nr-text-body);
+  font-weight: bold;
+  cursor: pointer;
+}
+.geo-btn:disabled { opacity: 0.6; cursor: default; }
+.search-near {
+  margin-left: auto;
+  margin-right: var(--nr-space-sm);
+  font-size: var(--nr-text-caption);
+  color: var(--nr-text-muted);
+}
 
 /* Service row is now a button */
 .svc {

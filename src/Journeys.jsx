@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getJourneys } from './api.js'
+import { getJourneys, getStations } from './api.js'
 import StationSearch from './StationSearch.jsx'
 
 // Minutes between two "HH:MM" strings, assuming arr is later (handles past-midnight).
@@ -55,20 +55,31 @@ function JourneyRow({ service, to, onOpen }) {
   )
 }
 
-export default function Journeys({ onOpenService }) {
-  const [from, setFrom] = useState(null) // { crs, name }
-  const [to, setTo] = useState(null)
+const stub = (crs) => (crs ? { crs, name: crs } : null)
+
+export default function Journeys({ fromCrs, toCrs, onPair, onOpenService }) {
+  const [from, setFrom] = useState(() => stub(fromCrs)) // { crs, name }
+  const [to, setTo] = useState(() => stub(toCrs))
   const [picking, setPicking] = useState(null) // 'from' | 'to' | null
   const [board, setBoard] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
+
+  // Resolve real names for CRS-only stations (e.g. from a shared link).
+  useEffect(() => {
+    getStations().then((all) => {
+      const byCrs = new Map(all.map((s) => [s.crs, s.name]))
+      setFrom((f) => (f && byCrs.has(f.crs) ? { crs: f.crs, name: byCrs.get(f.crs) } : f))
+      setTo((t) => (t && byCrs.has(t.crs) ? { crs: t.crs, name: byCrs.get(t.crs) } : t))
+    }).catch(() => {})
+  }, [])
 
   const search = useCallback(async (f, t) => {
     setLoading(true)
     setError(null)
     setBoard(null)
     try {
-      setBoard(await getJourneys(f.crs, t.crs, 10))
+      setBoard(await getJourneys(f, t, 10))
     } catch (e) {
       setError(e.message)
     } finally {
@@ -77,8 +88,8 @@ export default function Journeys({ onOpenService }) {
   }, [])
 
   useEffect(() => {
-    if (from && to) search(from, to)
-  }, [from, to, search])
+    if (from?.crs && to?.crs) search(from.crs, to.crs)
+  }, [from?.crs, to?.crs, search])
 
   // Picker overlay pushes history so Back closes it (mirrors App's overlays).
   useEffect(() => {
@@ -97,9 +108,15 @@ export default function Journeys({ onOpenService }) {
       <StationSearch
         onClose={() => window.history.back()}
         onPick={(st) => {
+          const nf = picking === 'from' ? st : from
+          const nt = picking === 'to' ? st : to
           if (picking === 'from') setFrom(st)
           else setTo(st)
-          window.history.back()
+          setPicking(null)
+          // If both ends are now set, replace the picker's history entry with the
+          // shareable /journeys/from/to URL; otherwise just close the picker.
+          if (nf?.crs && nt?.crs) onPair(nf.crs, nt.crs)
+          else window.history.back()
         }}
       />
     )
@@ -108,6 +125,7 @@ export default function Journeys({ onOpenService }) {
   function swap() {
     setFrom(to)
     setTo(from)
+    if (from?.crs && to?.crs) onPair(to.crs, from.crs)
   }
 
   const services = board?.trainServices ?? []

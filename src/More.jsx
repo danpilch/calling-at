@@ -17,6 +17,17 @@ export default function More() {
         of ours storing your data.
       </p>
 
+      <h3 className="section-h">Install this app</h3>
+      <p className="more-text">
+        Calling At can be installed to your home screen and works offline (live times still
+        need a connection):
+      </p>
+      <ul className="more-list">
+        <li><strong>iPhone / iPad (Safari):</strong> Share → Add to Home Screen.</li>
+        <li><strong>Android (Chrome):</strong> ⋮ menu → Install app.</li>
+        <li><strong>Desktop (Chrome / Edge):</strong> the install icon in the address bar.</li>
+      </ul>
+
       <h3 className="section-h">Data</h3>
       <p className="more-text">
         Live running information is provided by National Rail Enquiries Darwin, fetched via a public{' '}
