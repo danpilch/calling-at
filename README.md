@@ -8,10 +8,12 @@ instance (a CORS-enabled JSON proxy for the National Rail Darwin LDBWS API); the
 
 ## Develop
 
+Uses [Bun](https://bun.sh) (pinned in `.tool-versions` for asdf):
+
 ```bash
-npm install
-npm run dev      # http://localhost:5173/
-npm run build    # production build -> dist/
+bun install
+bun run dev      # http://localhost:5173/
+bun run build    # production build -> dist/
 ```
 
 ## Deploy
