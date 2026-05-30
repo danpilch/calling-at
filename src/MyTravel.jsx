@@ -1,4 +1,5 @@
 import { getFavourites, getRecents } from './storage.js'
+import PinnedTrain from './PinnedTrain.jsx'
 
 // "My Travel" tab: saved favourite stations and recently-viewed ones.
 // Tapping a station opens its live board (handled by the parent).
@@ -22,6 +23,8 @@ export default function MyTravel({ onPick, onFindStation }) {
   return (
     <main className="wrap">
       <h2>My Travel</h2>
+
+      <PinnedTrain />
 
       <h3 className="section-h">Favourites</h3>
       {favourites.length === 0 ? (

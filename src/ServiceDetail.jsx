@@ -1,7 +1,21 @@
 import { Fragment, useEffect, useState } from 'react'
 import { getService } from './api.js'
+import { isPinned, setPinned, clearPinned } from './storage.js'
 
 const isTime = (v) => typeof v === 'string' && /^\d{2}:\d{2}$/.test(v)
+
+// Turn a HH:MM scheduled time into an absolute expiry (ms). Darwin gives only
+// wall-clock times with no date, so we pin it to today; if that lands more than
+// an hour in the past, the service runs after midnight (or the board is for a
+// late-night train) so roll to tomorrow. A 90-min grace covers delays.
+function expiryFor(hhmm) {
+  if (!isTime(hhmm)) return null
+  const now = new Date()
+  const [h, m] = hhmm.split(':').map(Number)
+  const at = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m)
+  if (at.getTime() < now.getTime() - 60 * 60 * 1000) at.setDate(at.getDate() + 1)
+  return at.getTime() + 90 * 60 * 1000
+}
 
 // Status line for a stop. Passed stops report their actual time/value (muted);
 // upcoming stops show the estimate (on-time green / revised time red).
@@ -41,6 +55,7 @@ const toStop = (p) => ({ name: p.locationName, sched: p.st, at: p.at, et: p.et, 
 export default function ServiceDetail({ serviceId, summary, onClose }) {
   const [svc, setSvc] = useState(null)
   const [error, setError] = useState(null)
+  const [pinned, setPinnedState] = useState(() => isPinned(serviceId))
 
   useEffect(() => {
     let live = true
@@ -72,6 +87,20 @@ export default function ServiceDetail({ serviceId, summary, onClose }) {
 
   const dest = subsequent.length ? subsequent[subsequent.length - 1].name : summary?.dest
 
+  function togglePin() {
+    if (pinned) {
+      clearPinned()
+      setPinnedState(false)
+      return
+    }
+    // Expire when the train should have reached its destination (or this stop,
+    // if no onward calling points are listed).
+    const arr = subsequent.length ? subsequent[subsequent.length - 1].sched : here?.sched
+    const label = `${here?.sched ?? ''} ${svc.locationName}${dest ? ` to ${dest}` : ''}`.trim()
+    setPinned({ serviceId, label, expiresAt: expiryFor(arr) })
+    setPinnedState(true)
+  }
+
   return (
     <div className="overlay">
       <header className="hdr">
@@ -90,6 +119,15 @@ export default function ServiceDetail({ serviceId, summary, onClose }) {
               {svc.platform && <span>Platform {svc.platform}</span>}
               {svc.length ? <span>{svc.length} coaches</span> : null}
             </div>
+
+            <button
+              className={`pin-btn ${pinned ? 'pin-on' : ''}`}
+              onClick={togglePin}
+              aria-pressed={pinned}
+            >
+              <span className="pin-icon">{pinned ? '★' : '☆'}</span>
+              {pinned ? 'Unpin this train' : 'Pin this train'}
+            </button>
 
             {svc.isCancelled && (
               <div className="alert">
