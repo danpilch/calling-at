@@ -11,6 +11,9 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  /* Reserve room for the fixed tab bar (+ iOS home-indicator inset) so content
+     can scroll fully into view instead of hiding behind it. */
+  padding-bottom: calc(var(--nr-tabbar-height) + env(safe-area-inset-bottom, 0px));
 }
 
 /* Header — 38px navy bar, light-blue text, yellow arrow (from extracted tokens) */
@@ -175,7 +178,13 @@ h2 {
   background: var(--nr-navy-alt);
   color: #fff;
   height: var(--nr-tabbar-height);
-  flex: 0 0 auto;
+  /* Pinned to the viewport so it's always visible regardless of scroll. */
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .tabbar button {
   flex: 1;
@@ -235,6 +244,48 @@ h2 {
 }
 .fav-btn.fav-on { color: var(--nr-yellow); border-color: var(--nr-yellow); }
 .fav-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* Pin this train button (service detail) */
+.pin-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--nr-space-sm);
+  width: 100%;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid var(--nr-divider);
+  border-radius: 6px;
+  padding: var(--nr-button-padding) var(--nr-list-row-padding);
+  margin-bottom: var(--nr-space-md);
+  cursor: pointer;
+  font-family: var(--nr-font-body);
+  font-size: var(--nr-text-subhead);
+  font-weight: bold;
+  color: var(--nr-navy);
+}
+.pin-btn.pin-on { background: var(--nr-yellow); border-color: var(--nr-yellow); }
+.pin-icon { line-height: 1; }
+
+/* Pinned service box (top of My Travel) */
+.pinned-box {
+  display: flex;
+  align-items: center;
+  gap: var(--nr-space-sm);
+  width: 100%;
+  background: var(--nr-yellow);
+  border: 1px solid var(--nr-yellow);
+  border-radius: 6px;
+  padding: var(--nr-button-padding) var(--nr-list-row-padding);
+  margin-bottom: var(--nr-space-md);
+  cursor: pointer;
+  font-family: var(--nr-font-body);
+  font-size: var(--nr-text-subhead);
+  font-weight: bold;
+  color: var(--nr-navy);
+  text-align: left;
+}
+.pinned-label { flex: 1; }
+.pinned-arrow { color: var(--nr-navy); }
 
 /* My Travel section headings + find-station button */
 .section-h {
@@ -385,10 +436,14 @@ h2 {
 }
 .svc-chevron { color: var(--nr-empty-field); font-size: var(--nr-text-headline); margin-left: var(--nr-space-xs); }
 
-/* Full-screen overlays (search + service detail) */
+/* Full-screen overlays (search + service detail) — stop above the fixed tab
+   bar so the bottom nav stays visible and reachable. */
 .overlay {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--nr-tabbar-height) + env(safe-area-inset-bottom, 0px));
   background: var(--nr-light-grey);
   display: flex;
   flex-direction: column;

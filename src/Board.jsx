@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { getBoard, getJourneys } from './api.js'
 import StationSearch from './StationSearch.jsx'
+import PinnedTrain from './PinnedTrain.jsx'
 import { navigate, replace } from './router.js'
 import { isFavourite, toggleFavourite, addRecent } from './storage.js'
 
@@ -115,6 +116,8 @@ export default function Board({ crs, mode, filterCrs, onOpenService }) {
   return (
     <main className="wrap">
       <h2>{mode === 'arrivals' ? 'Live Arrivals' : 'Live Departures'}</h2>
+
+      <PinnedTrain />
 
       <div className="station-bar">
         <button className="search-trigger" onClick={() => openPicker('station')}>

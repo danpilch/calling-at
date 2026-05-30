@@ -41,11 +41,11 @@ export default function App() {
 
   let main_view
   if (view === 'service') {
-    return <ServiceDetail serviceId={seg[1]} onClose={() => window.history.back()} />
+    main_view = <ServiceDetail serviceId={seg[1]} onClose={() => window.history.back()} />
   } else if (view === 'search') {
     // Standalone search (Stations tab / "Find a station") — pick replaces this
     // transient entry with the chosen board so Back skips the search.
-    return (
+    main_view = (
       <StationSearch
         onClose={() => window.history.back()}
         onPick={(st) => replace(`/live/${st.crs}/departures`)}

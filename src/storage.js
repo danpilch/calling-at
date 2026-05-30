@@ -2,6 +2,7 @@
 // No backend — this is the whole "My Travel" data layer.
 const FAV_KEY = 'callingat.favourites'
 const RECENT_KEY = 'callingat.recents'
+const PINNED_KEY = 'callingat.pinned'
 const RECENT_MAX = 8
 
 function read(key) {
@@ -57,4 +58,42 @@ export function addRecent(station) {
   const next = [entry, ...read(RECENT_KEY).filter((s) => s.crs !== entry.crs)].slice(0, RECENT_MAX)
   write(RECENT_KEY, next)
   return next
+}
+
+// Pinned service: a single "track this train" slot (the original app pinned one
+// service at a time). Shape: { serviceId, label, expiresAt }. It auto-expires
+// once the train should have arrived so a stale pin doesn't linger forever.
+export function getPinned() {
+  try {
+    const v = JSON.parse(localStorage.getItem(PINNED_KEY))
+    if (!v || typeof v !== 'object' || !v.serviceId) return null
+    if (v.expiresAt && Date.now() > v.expiresAt) {
+      clearPinned()
+      return null
+    }
+    return v
+  } catch {
+    return null
+  }
+}
+
+export function isPinned(serviceId) {
+  const p = getPinned()
+  return !!p && p.serviceId === serviceId
+}
+
+export function setPinned(pin) {
+  try {
+    localStorage.setItem(PINNED_KEY, JSON.stringify(pin))
+  } catch {
+    // storage full or unavailable — pin just won't persist
+  }
+}
+
+export function clearPinned() {
+  try {
+    localStorage.removeItem(PINNED_KEY)
+  } catch {
+    // ignore
+  }
 }
