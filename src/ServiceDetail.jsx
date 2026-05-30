@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from 'react'
 import { getService } from './api.js'
 import { isPinned, setPinned, clearPinned } from './storage.js'
+import { loadingLevel, avgLoading, hasCoachLoading, hasToilet } from './formation.js'
 
 const isTime = (v) => typeof v === 'string' && /^\d{2}:\d{2}$/.test(v)
 
@@ -44,13 +45,76 @@ function Stop({ stop }) {
           {stop.platform ? <span className="stop-plat"> · Plat {stop.platform}</span> : null}
         </div>
         {st.text && st.text !== stop.sched && <div className={`stop-status ${st.cls}`}>{st.text}</div>}
+        {stop.detachFront && (
+          <div className="stop-split">Train splits here — front coaches detach</div>
+        )}
       </div>
     </div>
   )
 }
 
-// Normalise a Darwin calling point into our flat stop shape.
-const toStop = (p) => ({ name: p.locationName, sched: p.st, at: p.at, et: p.et, crs: p.crs })
+// Train formation: a row of carriages, shaded by live crowding where reported,
+// First-class coaches highlighted. Falls back to a service-wide "how busy" line
+// when only an average is given, and renders nothing when no formation exists.
+function Formation({ formation }) {
+  const coaches = formation?.coaches ?? []
+  if (!coaches.length) {
+    const avg = avgLoading(formation)
+    if (avg == null) return null
+    const lvl = loadingLevel(avg)
+    return (
+      <>
+        <h2 className="detail-h">How busy</h2>
+        <div className={`load-summary ${lvl.cls}`}>
+          Usually <strong>{lvl.label.toLowerCase()}</strong> — about {avg}% full
+        </div>
+      </>
+    )
+  }
+  const showLoading = hasCoachLoading(formation)
+  return (
+    <>
+      <h2 className="detail-h">Train formation</h2>
+      <div className="formation" role="img" aria-label={`${coaches.length} coaches`}>
+        {coaches.map((c, i) => {
+          const lvl = c.loadingSpecified ? loadingLevel(c.loading) : null
+          return (
+            <div
+              key={i}
+              className={`coach ${c.coachClass === 'First' ? 'coach-first' : ''}`}
+              title={lvl ? `Coach ${c.number}: ${lvl.label} (${c.loading}% full)` : `Coach ${c.number}`}
+            >
+              {lvl && <div className={`coach-fill ${lvl.cls}`} style={{ height: `${Math.max(c.loading, 8)}%` }} />}
+              <span className="coach-num">{c.number}</span>
+              {hasToilet(c.toilet) && <span className="coach-toilet" aria-label="toilet">wc</span>}
+            </div>
+          )
+        })}
+      </div>
+      {showLoading && (
+        <div className="load-legend">
+          <span className="load-low">Quiet</span>
+          <span className="load-mid">Moderate</span>
+          <span className="load-high">Busy</span>
+        </div>
+      )}
+      {coaches.some((c) => c.coachClass === 'First') && (
+        <div className="muted formation-note">Highlighted coaches are First class.</div>
+      )}
+    </>
+  )
+}
+
+// Normalise a Darwin calling point into our flat stop shape. `detachFront` flags
+// a stop where the front portion of the train splits off.
+const toStop = (p) => ({
+  name: p.locationName,
+  sched: p.st,
+  at: p.at,
+  et: p.et,
+  crs: p.crs,
+  detachFront: p.detachFront,
+})
 
 export default function ServiceDetail({ serviceId, summary, onClose }) {
   const [svc, setSvc] = useState(null)
@@ -76,6 +140,7 @@ export default function ServiceDetail({ serviceId, summary, onClose }) {
     et: svc.etd || svc.eta,
     platform: svc.platform,
     crs: svc.crs,
+    detachFront: svc.detachFront,
     here: true,
   }
   const stops = svc ? [...prev, here, ...subsequent] : []
@@ -86,6 +151,15 @@ export default function ServiceDetail({ serviceId, summary, onClose }) {
   stops.forEach((s, i) => { if (s.passed) lastPassed = i })
 
   const dest = subsequent.length ? subsequent[subsequent.length - 1].name : summary?.dest
+
+  // Portion working / reversal: any stop where the front detaches means the
+  // train splits; isReverseFormation means coach order is back-to-front.
+  const splits = !!(svc?.detachFront || stops.some((s) => s.detachFront))
+  const reversed = !!svc?.isReverseFormation
+  // Diversion: Darwin exposes the *current* (live) origin/destination separately
+  // from the booked ones when a service has been diverted or curtailed.
+  const divertedTo = svc?.currentDestinations?.[0]?.locationName
+  const diverted = divertedTo && divertedTo !== dest
 
   function togglePin() {
     if (pinned) {
@@ -139,6 +213,19 @@ export default function ServiceDetail({ serviceId, summary, onClose }) {
                 <p>{svc.delayReason}</p>
               </div>
             )}
+            {diverted && (
+              <div className="alert">
+                <p><strong>Diverted.</strong> Now terminating at {divertedTo} (booked to {dest}).</p>
+              </div>
+            )}
+            {(splits || reversed) && (
+              <div className="notice">
+                {splits && <p>This train splits en route — check platform displays for which coaches to board.</p>}
+                {reversed && <p>Coaches are in reverse order at this station.</p>}
+              </div>
+            )}
+
+            <Formation formation={svc.formation} />
 
             <h2 className="detail-h">Route</h2>
             <div className="card timeline">

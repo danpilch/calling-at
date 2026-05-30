@@ -583,3 +583,106 @@ h2 {
 .stop-status { font-size: var(--nr-text-caption); font-weight: bold; }
 .stop-status.on-time { color: var(--nr-on-time); }
 .stop-status.delay { color: var(--nr-delay); }
+.stop-split {
+  font-size: var(--nr-text-caption);
+  font-weight: bold;
+  color: var(--nr-price);
+}
+
+/* Crowding bands (shared) */
+.load-low { color: var(--nr-on-time); }
+.load-mid { color: #9f662e; }
+.load-high { color: var(--nr-delay); }
+.coach-fill.load-low { background: var(--nr-on-time); }
+.coach-fill.load-mid { background: #e8a33d; }
+.coach-fill.load-high { background: var(--nr-delay); }
+
+/* Board: compact crowding badge in a service's meta line */
+.crowd { margin-left: var(--nr-space-sm); font-weight: bold; }
+
+/* Board: diverted / replacement-service tags */
+.svc-tag {
+  display: inline-block;
+  margin-left: var(--nr-space-sm);
+  padding: 0 6px;
+  border-radius: 3px;
+  font-size: var(--nr-text-caption);
+  font-weight: bold;
+  text-transform: uppercase;
+  background: #fff4f4;
+  color: var(--nr-delay);
+  vertical-align: middle;
+}
+.svc-tag-alt {
+  margin: 0 var(--nr-space-sm) 0 0;
+  background: var(--nr-navy);
+  color: #fff;
+  text-transform: none;
+}
+.svc-alt { background: #f7f9fb; }
+
+/* Service detail: portion-working / reversal notice (informational, not an alert) */
+.notice {
+  background: #fffbe6;
+  border: 1px solid var(--nr-yellow);
+  border-radius: 6px;
+  padding: var(--nr-list-row-padding);
+  margin-bottom: var(--nr-space-md);
+  font-size: var(--nr-text-caption);
+}
+.notice p { margin: 0 0 var(--nr-space-xs); }
+.notice p:last-child { margin-bottom: 0; }
+
+/* Service detail: "how busy" summary line */
+.load-summary {
+  font-size: var(--nr-text-body);
+  font-weight: bold;
+  margin-bottom: var(--nr-space-md);
+}
+
+/* Service detail: train formation — a row of carriage blocks */
+.formation {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+  overflow-x: auto;
+  padding-bottom: var(--nr-space-xs);
+}
+.coach {
+  position: relative;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 48px;
+  border: 1px solid var(--nr-divider);
+  border-radius: 4px 4px 2px 2px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+.coach-first { border-color: var(--nr-navy); box-shadow: inset 0 0 0 2px var(--nr-yellow); }
+.coach-fill { width: 100%; opacity: 0.85; }
+.coach-num {
+  position: relative;
+  z-index: 1;
+  font-size: var(--nr-text-caption);
+  font-weight: bold;
+  padding-bottom: 1px;
+}
+.coach-toilet {
+  position: absolute;
+  top: 2px;
+  font-size: 9px;
+  color: var(--nr-text-muted);
+  text-transform: uppercase;
+}
+.load-legend {
+  display: flex;
+  gap: var(--nr-space-md);
+  margin-top: var(--nr-space-sm);
+  font-size: var(--nr-text-caption);
+  font-weight: bold;
+}
+.formation-note { font-size: var(--nr-text-caption); margin-top: var(--nr-space-xs); }

@@ -4,6 +4,7 @@ import StationSearch from './StationSearch.jsx'
 import PinnedTrain from './PinnedTrain.jsx'
 import { navigate, replace } from './router.js'
 import { isFavourite, toggleFavourite, addRecent } from './storage.js'
+import { loadingLevel, avgLoading, hasCoachLoading } from './formation.js'
 
 const QUICK = ['WIN', 'PAD', 'KGX', 'EUS', 'WAT', 'VIC']
 const REFRESH_MS = 30000
@@ -14,9 +15,38 @@ function statusClass(etd) {
   return 'delay'
 }
 
+// Darwin stamps `generatedAt` as a full ISO instant in UTC (e.g. ...T11:48+00:00).
+// Format it in the browser's own timezone so the "as of" time lines up with the
+// UK-local HH:MM train times (in BST that's UTC+1, so 11:48Z → 12:48).
+function localTime(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+}
+
+// Board-level crowding %: prefer Darwin's service average, else the mean of the
+// per-coach loadings when those are reported. Null when no loading data at all.
+function boardLoading(formation) {
+  const avg = avgLoading(formation)
+  if (avg != null) return avg
+  if (!hasCoachLoading(formation)) return null
+  const ls = formation.coaches.filter((c) => c.loadingSpecified).map((c) => c.loading)
+  return Math.round(ls.reduce((a, b) => a + b, 0) / ls.length)
+}
+
+function CrowdBadge({ formation }) {
+  const pct = boardLoading(formation)
+  const lvl = loadingLevel(pct)
+  if (!lvl) return null
+  return <span className={`crowd ${lvl.cls}`} title={`About ${pct}% full`}>● {lvl.label}</span>
+}
+
 function ServiceRow({ s, mode, onOpen }) {
   const arrivals = mode === 'arrivals'
-  const place = (arrivals ? s.origin : s.destination)?.[0]
+  // Use the live (current) origin/destination when a service has been diverted.
+  const current = arrivals ? s.currentOrigins?.[0] : s.currentDestinations?.[0]
+  const place = current ?? (arrivals ? s.origin : s.destination)?.[0]
   const name = place?.locationName ?? '—'
   const via = place?.via ? ` ${place.via}` : ''
   const sched = arrivals ? s.sta : s.std
@@ -25,14 +55,43 @@ function ServiceRow({ s, mode, onOpen }) {
     <button className="svc" onClick={() => onOpen(s, name, sched)}>
       <div className="svc-time">{sched}</div>
       <div className="svc-dest">
-        <div className="svc-dest-name">{arrivals ? 'from ' : ''}{name}{via}</div>
+        <div className="svc-dest-name">
+          {arrivals ? 'from ' : ''}{name}{via}
+          {current && <span className="svc-tag">diverted</span>}
+        </div>
         <div className="svc-meta">
           {s.operator}{s.platform ? ` · Plat ${s.platform}` : ' · Plat —'}
+          <CrowdBadge formation={s.formation} />
         </div>
       </div>
       <div className={`svc-status ${statusClass(expected)}`}>{expected}</div>
       <span className="svc-chevron">&#8250;</span>
     </button>
+  )
+}
+
+// Rail-replacement bus / ferry services (board-level busServices / ferryServices).
+// Same shape as trains but with no live tracking, so these rows aren't tappable.
+function ReplacementRow({ s, mode, type }) {
+  const arrivals = mode === 'arrivals'
+  const place = (arrivals ? s.origin : s.destination)?.[0]
+  const name = place?.locationName ?? '—'
+  const sched = arrivals ? s.sta : s.std
+  const expected = s.isCancelled ? 'Cancelled' : (arrivals ? s.eta : s.etd)
+  return (
+    <div className="svc svc-alt">
+      <div className="svc-time">{sched}</div>
+      <div className="svc-dest">
+        <div className="svc-dest-name">
+          <span className="svc-tag svc-tag-alt">{type === 'ferry' ? '⛴ Ferry' : '🚌 Bus'}</span>
+          {arrivals ? 'from ' : ''}{name}
+        </div>
+        <div className="svc-meta">
+          {s.operator || `Replacement ${type}`}
+        </div>
+      </div>
+      <div className={`svc-status ${statusClass(expected)}`}>{expected}</div>
+    </div>
   )
 }
 
@@ -111,6 +170,8 @@ export default function Board({ crs, mode, filterCrs, onOpenService }) {
   }
 
   const services = board?.trainServices ?? []
+  const buses = board?.busServices ?? []
+  const ferries = board?.ferryServices ?? []
   const messages = board?.nrccMessages ?? []
 
   return (
@@ -176,7 +237,7 @@ export default function Board({ crs, mode, filterCrs, onOpenService }) {
         <div className="board-head">
           <strong>{board.locationName}</strong>
           <span className="muted">
-            {loading ? 'Updating…' : `as of ${board.generatedAt?.slice(11, 16) ?? ''}`}
+            {loading ? 'Updating…' : `as of ${localTime(board.generatedAt)}`}
           </span>
         </div>
       )}
@@ -192,7 +253,7 @@ export default function Board({ crs, mode, filterCrs, onOpenService }) {
       {error && <div className="error">Couldn’t load {mode}: {error}</div>}
       {loading && !board && <div className="muted pad">Loading live board…</div>}
 
-      {board && services.length === 0 && !loading && (
+      {board && services.length === 0 && buses.length === 0 && ferries.length === 0 && !loading && (
         <div className="muted pad">
           No {mode} listed right now{filter ? ` calling at ${board?.filterLocationName ?? filter}` : ''}.
         </div>
@@ -201,6 +262,12 @@ export default function Board({ crs, mode, filterCrs, onOpenService }) {
       <div className="card">
         {services.map((s) => (
           <ServiceRow key={s.serviceIdGuid ?? s.serviceIdUrlSafe} s={s} mode={mode} onOpen={onOpenService} />
+        ))}
+        {buses.map((s, i) => (
+          <ReplacementRow key={`bus-${i}`} s={s} mode={mode} type="bus" />
+        ))}
+        {ferries.map((s, i) => (
+          <ReplacementRow key={`ferry-${i}`} s={s} mode={mode} type="ferry" />
         ))}
       </div>
     </main>
