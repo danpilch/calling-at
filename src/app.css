@@ -1,0 +1,371 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--nr-font-body);
+  color: var(--nr-text);
+  background: var(--nr-light-grey);
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header — 38px navy bar, light-blue text, yellow arrow (from extracted tokens) */
+.hdr {
+  background: var(--nr-navy);
+  color: var(--nr-header-text);
+  height: var(--nr-header-height);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--nr-activity-margin);
+  flex: 0 0 auto;
+}
+.hdr h1 {
+  font-family: var(--nr-font-header);
+  font-size: var(--nr-text-subhead);
+  margin: 0;
+  color: #fff;
+}
+.hdr-arrow { color: var(--nr-yellow); font-weight: bold; margin-right: 8px; }
+.hdr-accent { color: var(--nr-yellow); }
+
+.wrap {
+  flex: 1 1 auto;
+  padding: var(--nr-activity-margin);
+  max-width: 480px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+h2 {
+  font-family: var(--nr-font-header);
+  color: var(--nr-navy);
+  font-size: var(--nr-text-headline);
+  margin: 0 0 var(--nr-space-md);
+}
+
+/* Station picker */
+.picker { display: flex; gap: var(--nr-space-sm); margin-bottom: var(--nr-space-md); }
+.picker input {
+  flex: 1;
+  padding: var(--nr-button-padding);
+  font-size: var(--nr-text-subhead);
+  text-transform: uppercase;
+  border: 1px solid var(--nr-divider);
+  border-radius: 6px;
+}
+.picker button, .chip {
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--nr-font-body);
+}
+.picker button {
+  background: var(--nr-navy);
+  color: #fff;
+  padding: 0 var(--nr-space-lg);
+  font-size: var(--nr-text-body);
+  font-weight: bold;
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--nr-space-md); }
+.chip {
+  background: var(--nr-earlier-later);
+  color: var(--nr-link);
+  padding: 6px 12px;
+  font-size: var(--nr-text-caption);
+  font-weight: bold;
+}
+.chip-on { background: var(--nr-navy); color: #fff; }
+
+/* Departures / Arrivals toggle */
+.toggle {
+  display: flex;
+  border: 1px solid var(--nr-navy);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: var(--nr-space-md);
+}
+.toggle button {
+  flex: 1;
+  background: #fff;
+  border: none;
+  padding: var(--nr-button-padding) 0;
+  font-family: var(--nr-font-body);
+  font-size: var(--nr-text-body);
+  font-weight: bold;
+  color: var(--nr-navy);
+  cursor: pointer;
+}
+.toggle button + button { border-left: 1px solid var(--nr-navy); }
+.toggle .toggle-on { background: var(--nr-navy); color: #fff; }
+
+.board-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--nr-space-sm);
+}
+.board-head strong { font-size: var(--nr-text-subhead); color: var(--nr-navy); }
+.muted { color: var(--nr-text-muted); font-size: var(--nr-text-caption); }
+.pad { padding: var(--nr-space-lg) 0; text-align: center; }
+
+.alert {
+  background: #fff4f4;
+  border: 1px solid var(--nr-alert);
+  border-radius: 6px;
+  padding: var(--nr-list-row-padding);
+  margin-bottom: var(--nr-space-md);
+  font-size: var(--nr-text-caption);
+  color: var(--nr-text);
+}
+.alert p { margin: 0 0 var(--nr-space-xs); }
+.alert a { color: var(--nr-link); }
+
+.error {
+  background: #fff4f4;
+  border: 1px solid var(--nr-delay);
+  color: var(--nr-delay);
+  border-radius: 6px;
+  padding: var(--nr-list-row-padding);
+  margin-bottom: var(--nr-space-md);
+  font-size: var(--nr-text-body);
+}
+
+/* Departure list */
+.card {
+  background: #fff;
+  border: 1px solid var(--nr-divider);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.svc {
+  display: flex;
+  align-items: center;
+  gap: var(--nr-space-md);
+  padding: var(--nr-list-row-padding);
+  border-bottom: 1px solid var(--nr-divider);
+}
+.svc:last-child { border-bottom: none; }
+.svc-time {
+  font-weight: bold;
+  font-size: var(--nr-text-subhead);
+  color: var(--nr-navy);
+  min-width: 52px;
+}
+.svc-dest { flex: 1; min-width: 0; }
+.svc-dest-name {
+  font-size: var(--nr-text-body);
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.svc-meta { font-size: var(--nr-text-caption); color: var(--nr-text-muted); }
+.svc-status { font-size: var(--nr-text-body); font-weight: bold; text-align: right; min-width: 64px; }
+.svc-status.on-time { color: var(--nr-on-time); }
+.svc-status.delay { color: var(--nr-delay); }
+
+/* Bottom tab bar — 56px */
+.tabbar {
+  display: flex;
+  background: var(--nr-navy-alt);
+  color: #fff;
+  height: var(--nr-tabbar-height);
+  flex: 0 0 auto;
+}
+.tabbar div {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+}
+.tabbar div:last-child { border-right: none; }
+.tab-on { background: var(--nr-navy); font-weight: bold; box-shadow: inset 0 -3px 0 var(--nr-yellow); }
+
+/* Search trigger (replaces the raw CRS input on the board) */
+.search-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--nr-space-md);
+  width: 100%;
+  background: #fff;
+  border: 1px solid var(--nr-divider);
+  border-radius: 6px;
+  padding: var(--nr-button-padding) var(--nr-list-row-padding);
+  margin-bottom: var(--nr-space-md);
+  cursor: pointer;
+  font-family: var(--nr-font-body);
+  font-size: var(--nr-text-subhead);
+  font-weight: bold;
+  color: var(--nr-navy);
+  text-align: left;
+}
+.search-icon { color: var(--nr-link); }
+.search-trigger-hint {
+  margin-left: auto;
+  font-size: var(--nr-text-caption);
+  font-weight: normal;
+  color: var(--nr-link);
+}
+
+/* Service row is now a button */
+.svc {
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--nr-divider);
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--nr-font-body);
+}
+.svc-chevron { color: var(--nr-empty-field); font-size: var(--nr-text-headline); margin-left: var(--nr-space-xs); }
+
+/* Full-screen overlays (search + service detail) */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--nr-light-grey);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+.hdr-back {
+  background: none;
+  border: none;
+  color: var(--nr-yellow);
+  font-size: var(--nr-text-headline);
+  line-height: 1;
+  margin-right: var(--nr-space-md);
+  cursor: pointer;
+  padding: 0;
+}
+.overlay .wrap { overflow-y: auto; }
+
+/* Station search */
+.search-bar {
+  background: var(--nr-navy);
+  padding: var(--nr-space-md) var(--nr-activity-margin);
+  flex: 0 0 auto;
+}
+.search-bar input {
+  width: 100%;
+  padding: var(--nr-button-padding);
+  font-size: var(--nr-text-subhead);
+  border: none;
+  border-radius: 6px;
+}
+.search-list { overflow-y: auto; flex: 1 1 auto; }
+.search-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: #fff;
+  border: none;
+  border-bottom: 1px solid var(--nr-divider);
+  padding: var(--nr-list-row-padding) var(--nr-activity-margin);
+  cursor: pointer;
+  font-family: var(--nr-font-body);
+  text-align: left;
+}
+.search-name { font-size: var(--nr-text-body); color: var(--nr-text); }
+.search-crs {
+  font-size: var(--nr-text-caption);
+  font-weight: bold;
+  color: var(--nr-link);
+  background: var(--nr-earlier-later);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+/* Service detail */
+.detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nr-space-md);
+  margin-bottom: var(--nr-space-md);
+  font-size: var(--nr-text-body);
+  color: var(--nr-text-muted);
+}
+.detail-h { font-size: var(--nr-text-subhead); margin: var(--nr-space-md) 0 var(--nr-space-sm); }
+.timeline { padding: var(--nr-space-sm) 0; }
+.stop {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--nr-space-md);
+  padding: var(--nr-space-md) var(--nr-list-row-padding);
+  position: relative;
+}
+/* One continuous rail line, drawn on .stop (its absolute box spans the padding,
+   so the line never breaks between rows). Geometry: stop padding-left 12px +
+   half the 12px marker = line centre at 18px; dot centre y = padding-top 10px +
+   marker-top 4px + half the 10px dot = 19px. */
+.stop::before {
+  content: '';
+  position: absolute;
+  left: 18px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--nr-divider-rail);
+  transform: translateX(-1px);
+}
+.stop:first-child::before { top: 19px; }
+.stop:last-child::before { bottom: calc(100% - 19px); }
+.stop-marker { position: relative; width: 12px; flex: 0 0 12px; display: flex; justify-content: center; }
+.stop-dot {
+  position: relative;
+  z-index: 1;
+  width: 10px; height: 10px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--nr-link);
+}
+.stop-here .stop-dot { background: var(--nr-yellow); border-color: var(--nr-navy); }
+/* Stops the train has already called at: filled, muted. */
+.stop-passed .stop-dot { background: var(--nr-divider-rail); border-color: var(--nr-divider-rail); }
+.stop-passed .stop-time, .stop-passed .stop-name { color: var(--nr-text-muted); }
+
+/* Current train position: a glowing circle sitting on the rail. */
+.train-pos {
+  position: relative;
+  height: 18px;
+}
+.train-pos::before { /* keep the rail continuous through the marker */
+  content: '';
+  position: absolute;
+  left: 18px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--nr-divider-rail);
+  transform: translateX(-1px);
+}
+.train-pos-dot {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--nr-blue-light);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 3px rgba(45, 157, 200, 0.45), 0 0 10px 3px rgba(45, 157, 200, 0.7);
+  z-index: 1;
+}
+.stop-time { min-width: 44px; font-weight: bold; color: var(--nr-navy); font-size: var(--nr-text-body); }
+.stop-body { flex: 1; }
+.stop-name { font-size: var(--nr-text-body); }
+.stop-here .stop-name { font-weight: bold; }
+.stop-plat { color: var(--nr-text-muted); font-weight: normal; font-size: var(--nr-text-caption); }
+.stop-status { font-size: var(--nr-text-caption); font-weight: bold; }
+.stop-status.on-time { color: var(--nr-on-time); }
+.stop-status.delay { color: var(--nr-delay); }

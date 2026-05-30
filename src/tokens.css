@@ -1,0 +1,62 @@
+/*
+ * Design tokens — extracted from National Rail app v9.6.5.2 for reference.
+ * Brand colours are National Rail trademarks; placeholder values pending reskin.
+ * Header font uses locally-installed Georgia (not bundled — licensed MS font).
+ */
+:root {
+  /* Brand */
+  --nr-navy:        #002e5c;
+  --nr-navy-alt:    #003366;
+  --nr-navy-alt2:   #003364;
+  --nr-yellow:      #ffd500;
+  --nr-yellow-soft: #edd264;
+  --nr-header-text: #b7d2e7;
+  --nr-overlay:     rgba(0, 51, 102, 0.75);
+
+  /* Status */
+  --nr-on-time:      #197b30;
+  --nr-delay:        #ed1c24;
+  --nr-alert:        #e61921;
+  --nr-slight-delay: #333333;
+  --nr-departed:     #666666;
+  --nr-info:         #165795;
+  --nr-price:        #9f662e;
+
+  /* UI neutrals */
+  --nr-text:             #333333;
+  --nr-text-muted:       #666666;
+  --nr-link:             #144586;
+  --nr-blue-light:       #2d9dc8;
+  --nr-divider:          #c7c7c7;
+  --nr-divider-rail:     #a4bdcf;
+  --nr-light-grey:       #e4e4e4;
+  --nr-empty-field:      #999999;
+  --nr-earlier-later:    #dbe8f3;
+  --nr-white:            #ffffff;
+  --nr-black:            #000000;
+
+  /* Typography */
+  --nr-font-header: Georgia, "Times New Roman", serif;
+  --nr-font-body:   -apple-system, "Roboto", "Helvetica Neue", Arial, sans-serif;
+  --nr-text-caption:  12px;
+  --nr-text-body:     14px;
+  --nr-text-spinner:  16px;
+  --nr-text-subhead:  18px;
+  --nr-text-headline: 24px;
+
+  /* Spacing */
+  --nr-space-xs: 2px;
+  --nr-space-sm: 5px;
+  --nr-space-md: 10px;
+  --nr-space-lg: 20px;
+  --nr-space-xl: 40px;
+  --nr-list-row-padding: 12px;
+  --nr-list-margin: 24px;
+  --nr-activity-margin: 16px;
+  --nr-button-padding: 10px;
+
+  /* Layout */
+  --nr-header-height: 38px;
+  --nr-tabbar-height: 56px;
+  --nr-route-view-width: 100px;
+}
