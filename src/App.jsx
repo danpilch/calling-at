@@ -2,6 +2,10 @@ import { useEffect, useState, useCallback } from 'react'
 import { getBoard } from './api.js'
 import StationSearch from './StationSearch.jsx'
 import ServiceDetail from './ServiceDetail.jsx'
+import MyTravel from './MyTravel.jsx'
+import Journeys from './Journeys.jsx'
+import More from './More.jsx'
+import { isFavourite, toggleFavourite, addRecent } from './storage.js'
 
 // A handful of well-known stations for quick selection. Full search lives in StationSearch.
 const QUICK = [
@@ -53,11 +57,13 @@ const REFRESH_MS = 30000
 export default function App() {
   const [crs, setCrs] = useState('WIN')
   const [mode, setMode] = useState('departures') // 'departures' | 'arrivals'
+  const [tab, setTab] = useState('live') // 'mytravel' | 'live' | 'journeys' | 'stations' | 'more'
   const [board, setBoard] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [selected, setSelected] = useState(null) // { id, std, dest }
+  const [fav, setFav] = useState(false) // is the current station favourited
 
   // Refreshes keep the current board on screen on error (don't flash empty);
   // only an initial/changed load clears it.
@@ -65,8 +71,11 @@ export default function App() {
     setLoading(true)
     if (!isRefresh) setError(null)
     try {
-      setBoard(await getBoard(m, code, 12))
+      const b = await getBoard(m, code, 12)
+      setBoard(b)
       setError(null)
+      // Record the station (with its proper name) in recents once we have a board.
+      if (b.locationName) addRecent({ crs: code, name: b.locationName })
     } catch (e) {
       setError(e.message)
       if (!isRefresh) setBoard(null)
@@ -81,6 +90,9 @@ export default function App() {
     setBoard(null)
     load(crs, mode)
   }, [crs, mode, load])
+
+  // Keep the favourite star in sync with the current station.
+  useEffect(() => { setFav(isFavourite(crs)) }, [crs])
 
   // Auto-refresh the board; paused while an overlay is open.
   useEffect(() => {
@@ -105,6 +117,18 @@ export default function App() {
     setSearchOpen(true)
   }
 
+  // Selecting a station (from search or My Travel) shows its live board.
+  function pickStation(st) {
+    setCrs(st.crs)
+    setTab('live')
+  }
+
+  function toggleFav() {
+    if (!board?.locationName) return
+    toggleFavourite({ crs, name: board.locationName })
+    setFav((f) => !f)
+  }
+
   function openService(s, name, sched) {
     const id = s.serviceIdPercentEncoded ?? s.serviceIdUrlSafe
     if (!id) return
@@ -116,7 +140,7 @@ export default function App() {
     return (
       <StationSearch
         onClose={() => window.history.back()}
-        onPick={(st) => { setCrs(st.crs); window.history.back() }}
+        onPick={(st) => { pickStation(st); window.history.back() }}
       />
     )
   }
@@ -131,21 +155,24 @@ export default function App() {
     )
   }
 
-  return (
-    <div className="app">
-      <header className="hdr">
-        <span className="hdr-arrow">&#8594;</span>
-        <h1>Calling<span className="hdr-accent"> At</span></h1>
-      </header>
+  const board_view = (
+    <main className="wrap">
+      <h2>{mode === 'arrivals' ? 'Live Arrivals' : 'Live Departures'}</h2>
 
-      <main className="wrap">
-        <h2>{mode === 'arrivals' ? 'Live Arrivals' : 'Live Departures'}</h2>
-
+      <div className="station-bar">
         <button className="search-trigger" onClick={openSearch}>
           <span className="search-icon">&#9906;</span>
           <span>{board?.locationName ?? crs}</span>
           <span className="search-trigger-hint">Change station</span>
         </button>
+        <button
+          className={`fav-btn ${fav ? 'fav-on' : ''}`}
+          onClick={toggleFav}
+          disabled={!board?.locationName}
+          aria-pressed={fav}
+          aria-label={fav ? 'Remove from favourites' : 'Add to favourites'}
+        >{fav ? '★' : '☆'}</button>
+      </div>
 
         <div className="chips">
           {QUICK.slice(0, 6).map((q) => (
@@ -200,13 +227,49 @@ export default function App() {
           ))}
         </div>
       </main>
+  )
+
+  let main_view
+  if (tab === 'mytravel') {
+    main_view = <MyTravel onPick={pickStation} onFindStation={openSearch} />
+  } else if (tab === 'journeys') {
+    main_view = <Journeys onOpenService={openService} />
+  } else if (tab === 'more') {
+    main_view = <More />
+  } else {
+    main_view = board_view // 'live' (Stations tab opens the search overlay instead)
+  }
+
+  const TABS = [
+    { key: 'mytravel', label: 'My Travel' },
+    { key: 'live', label: 'Live Trains' },
+    { key: 'journeys', label: 'Journeys' },
+    { key: 'stations', label: 'Stations' },
+    { key: 'more', label: 'More' },
+  ]
+
+  function onTab(key) {
+    if (key === 'stations') { openSearch(); return }
+    setTab(key)
+  }
+
+  return (
+    <div className="app">
+      <header className="hdr">
+        <span className="hdr-arrow">&#8594;</span>
+        <h1>Calling<span className="hdr-accent"> At</span></h1>
+      </header>
+
+      {main_view}
 
       <nav className="tabbar">
-        <div>My Travel</div>
-        <div className="tab-on">Live Trains</div>
-        <div>Journeys</div>
-        <div>Stations</div>
-        <div>More</div>
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            className={t.key === tab ? 'tab-on' : ''}
+            onClick={() => onTab(t.key)}
+          >{t.label}</button>
+        ))}
       </nav>
     </div>
   )

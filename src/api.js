@@ -10,6 +10,15 @@ export async function getBoard(mode, crs, rows = 12) {
   return res.json()
 }
 
+// GET /departures/{from}/to/{to}/{rows}?expand=true -> direct trains from `from`
+// that call at `to`, with calling points expanded so we can read the arrival time
+// at the destination. (Huxley has no journey planner, so this is direct-only.)
+export async function getJourneys(from, to, rows = 10) {
+  const res = await fetch(`${HUXLEY_BASE}/departures/${from}/to/${to}/${rows}?expand=true`)
+  if (!res.ok) throw new Error(`Huxley ${res.status} for ${from}→${to}`)
+  return res.json()
+}
+
 // GET /service/{serviceId} -> full service detail incl. calling points.
 export async function getService(serviceId) {
   const res = await fetch(`${HUXLEY_BASE}/service/${serviceId}`)
