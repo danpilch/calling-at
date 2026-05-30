@@ -88,19 +88,34 @@ export default function App() {
     return () => clearInterval(id)
   }, [crs, mode, overlayOpen, load])
 
+  // Each overlay pushes a history entry so the device/browser Back button (and
+  // the in-app back arrow, via history.back()) closes it instead of leaving the site.
+  useEffect(() => {
+    const onPop = () => { setSearchOpen(false); setSelected(null) }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+
   const services = board?.trainServices ?? []
   const messages = board?.nrccMessages ?? []
 
+  function openSearch() {
+    window.history.pushState({ overlay: 'search' }, '')
+    setSearchOpen(true)
+  }
+
   function openService(s, name, sched) {
     const id = s.serviceIdPercentEncoded ?? s.serviceIdUrlSafe
-    if (id) setSelected({ id, std: sched, dest: name })
+    if (!id) return
+    window.history.pushState({ overlay: 'detail' }, '')
+    setSelected({ id, std: sched, dest: name })
   }
 
   if (searchOpen) {
     return (
       <StationSearch
-        onClose={() => setSearchOpen(false)}
-        onPick={(st) => { setCrs(st.crs); setSearchOpen(false) }}
+        onClose={() => window.history.back()}
+        onPick={(st) => { setCrs(st.crs); window.history.back() }}
       />
     )
   }
@@ -110,7 +125,7 @@ export default function App() {
       <ServiceDetail
         serviceId={selected.id}
         summary={selected}
-        onClose={() => setSelected(null)}
+        onClose={() => window.history.back()}
       />
     )
   }
@@ -125,7 +140,7 @@ export default function App() {
       <main className="wrap">
         <h2>{mode === 'arrivals' ? 'Live Arrivals' : 'Live Departures'}</h2>
 
-        <button className="search-trigger" onClick={() => setSearchOpen(true)}>
+        <button className="search-trigger" onClick={openSearch}>
           <span className="search-icon">&#9906;</span>
           <span>{board?.locationName ?? crs}</span>
           <span className="search-trigger-hint">Change station</span>
